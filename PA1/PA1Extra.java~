@@ -1,0 +1,392 @@
+import java.io.*;
+import java.util.*;
+
+public class PA1{
+  
+  private static final int[][] goalState = {{0, 1, 2}, {3, 4, 5}, {6, 7, 8}};
+  private static final String[] moveDirections = {"up", "down", "left", "right"};
+  
+  private static int[][] currentState;
+  private static PriorityQueue<Tile> queue;
+  //private HashMap path = new HashMap(Integer, new LinkedList<String>());
+    
+  public static void setState(int[][] state, String command){
+    //System.out.println("command: " + command);
+    String[] parseState = command.split(" ");
+    for(int i = 0;i < parseState.length;i++){
+      for(int j = 0;j < parseState[i].length();j++){
+        if(parseState[i].charAt(j) == 'b') state[i][j] = 0;
+        else
+          state[i][j] = parseState[i].charAt(j) - '0';
+      }
+    }
+    //System.out.println("after: ");
+    //printState(state);
+  }
+  
+  public static void printState(int[][] state){
+    for(int i = 0;i < state.length;i++){
+      for(int j = 0;j < state[i].length;j++){
+        System.out.print(state[i][j] + "\t");
+      }
+      System.out.print("\n");
+    }
+  }
+  
+  public static void randomizeState(int N, Random r, int[][] state){
+    for(int i = 0;i < N;i++){
+      //System.out.println("randomizeState i1: " + i);
+      int direction = r.nextInt(4);
+      if(!isAvailable(state, direction)) i--;
+      else{
+        //System.out.println("direction: " + direction);
+        setState(state, move(state, direction));
+      }
+      //System.out.println("randomizeState i2: " + i);
+    }
+  }
+  
+  public static String move(int[][] state, int direction){
+    int[] position = findBlank(state);
+    //System.out.println(position[0] + " " + position[1]);
+    int[] changed = new int[2];
+    changed[0] = position[0] + (3-direction)/2 * (int)Math.pow(-1,direction+1);
+    changed[1] = position[1] + direction/2 * (int)Math.pow(-1, direction+1);
+    //System.out.println(changed[0] + " " + changed[1]);
+    StringBuilder builder = new StringBuilder();
+    for(int i = 0;i < 3;i++){
+      //System.out.println("i " + i);
+      for(int j = 0;j < 3;j++){
+        //System.out.println("j " + j);
+          if(i == changed[0] && j == changed[1]) builder.append('b');
+          else if(i == position[0] && j == position[1]) builder.append((char)('0'+state[changed[0]][changed[1]]));
+          else
+            builder.append((char)('0'+state[i][j]));
+      }
+      if(i != 2) builder.append(' ');
+    }
+    //System.out.println(builder.toString());
+    return builder.toString();
+  }
+  
+  // h1 = the number of misplaced tiles
+  public static void solveAStarFirst(){
+    Tile nodeptr = queue.poll();
+    currentState = myClone(nodeptr.state);
+    //System.out.println("currrentState: ");
+    //printState(currentState);
+    if(isFinished(currentState)){
+      System.out.println("Number of tile moves " + nodeptr.g);
+      printMoveSequences(nodeptr);
+    }
+    else{
+      if(isAvailable(currentState, 0)){
+        //System.out.println("pass 0");
+        int[][] newState1 = myClone(currentState);
+        setState(newState1, move(newState1, 0));
+        queue.add(new Tile(nodeptr, newState1, nodeptr.g + 1, findHFirst(newState1), 0));
+      }
+      if(isAvailable(currentState, 1)){
+        //System.out.println("pass 1");
+        int[][] newState2 = myClone(currentState);
+        setState(newState2, move(newState2, 1));
+        queue.add(new Tile(nodeptr, newState2, nodeptr.g + 1, findHFirst(newState2), 1));
+      }
+      if(isAvailable(currentState, 2)){
+        //System.out.println("pass 2");
+        int[][] newState3 = myClone(currentState);
+        setState(newState3, move(newState3, 2));
+        queue.add(new Tile(nodeptr, newState3, nodeptr.g + 1, findHFirst(newState3), 2));
+      }
+      if(isAvailable(currentState, 3)){
+        //System.out.println("pass 3");
+        int[][] newState4 = myClone(currentState);
+        setState(newState4, move(newState4, 3));
+        queue.add(new Tile(nodeptr, newState4, nodeptr.g + 1, findHFirst(newState4), 3));
+      }
+      solveAStarFirst();
+    }
+  }
+  
+  public static int findHFirst(int[][] state){
+    int misplace = 0;
+    for(int i = 0;i < 3;i++){
+      for(int j = 0;j < 3;j++){
+        if(state[i][j] != goalState[i][j]) misplace++;
+      }
+    }
+    return misplace;
+  }
+  
+  // h2 = the sum of the distances of the tiles from their goal positions
+  public static void solveAStarSecond(){
+    Tile nodeptr = queue.poll();
+    currentState = myClone(nodeptr.state);
+    //System.out.println("currrentState: ");
+    //printState(currentState);
+    if(isFinished(currentState)){
+      System.out.println("Number of tile moves " + nodeptr.g);
+      printMoveSequences(nodeptr);
+    }
+    else{
+      if(isAvailable(currentState, 0)){
+        //System.out.println("pass 0");
+        int[][] newState1 = myClone(currentState);
+        setState(newState1, move(newState1, 0));
+        queue.add(new Tile(nodeptr, newState1, nodeptr.g + 1, findHSecond(newState1), 0));
+      }
+      if(isAvailable(currentState, 1)){
+        //System.out.println("pass 1");
+        int[][] newState2 = myClone(currentState);
+        setState(newState2, move(newState2, 1));
+        queue.add(new Tile(nodeptr, newState2, nodeptr.g + 1, findHSecond(newState2), 1));
+      }
+      if(isAvailable(currentState, 2)){
+        //System.out.println("pass 2");
+        int[][] newState3 = myClone(currentState);
+        setState(newState3, move(newState3, 2));
+        queue.add(new Tile(nodeptr, newState3, nodeptr.g + 1, findHSecond(newState3), 2));
+      }
+      if(isAvailable(currentState, 3)){
+        //System.out.println("pass 3");
+        int[][] newState4 = myClone(currentState);
+        setState(newState4, move(newState4, 3));
+        queue.add(new Tile(nodeptr, newState4, nodeptr.g + 1, findHSecond(newState4), 3));
+      }
+      solveAStarSecond();
+    }
+  }
+  
+  public static int findHSecond(int[][] state){
+    int  manhattan = 0;
+    for(int i = 0;i < 3;i++){
+      for(int j = 0;j < 3;j++){
+        manhattan += (Math.abs(i-state[i][j]/3) + Math.abs(j-state[i][j] % 3));
+      }
+    }
+    return manhattan;
+  }
+  
+  public static void solveBeam(int K){
+    PriorityQueue<Tile> temp = new PriorityQueue<Tile>(cmp);
+    boolean end = false;
+    for(int i = 0;i < K;i++){
+      Tile nodeptr = queue.poll();
+      end = isFinished(nodeptr.state);
+      if(end){
+        System.out.println("Number of tile moves " + nodeptr.g);
+        printMoveSequences(nodeptr);
+        break;
+      }
+      else{
+        if(isAvailable(nodeptr.state, 0)){
+          //System.out.println("pass 0");
+          int[][] newState1 = myClone(nodeptr.state);
+          setState(newState1, move(nodeptr.state, 0));
+          temp.add(new Tile(nodeptr, newState1, nodeptr.g + 1, findHSecond(newState1), 0));
+        }
+        if(isAvailable(nodeptr.state, 1)){
+          //System.out.println("pass 1");
+          int[][] newState2 = myClone(nodeptr.state);
+          setState(newState2, move(newState2, 1));
+          temp.add(new Tile(nodeptr, newState2, nodeptr.g + 1, findHSecond(newState2), 1));
+        }
+        if(isAvailable(nodeptr.state, 2)){
+          //System.out.println("pass 2");
+          int[][] newState3 = myClone(nodeptr.state);
+          setState(newState3, move(newState3, 2));
+          temp.add(new Tile(nodeptr, newState3, nodeptr.g + 1, findHSecond(newState3), 2));
+        }
+        if(isAvailable(nodeptr.state, 3)){
+          //System.out.println("pass 3");
+          int[][] newState4 = myClone(nodeptr.state);
+          setState(newState4, move(newState4, 3));
+          temp.add(new Tile(nodeptr, newState4, nodeptr.g + 1, findHSecond(newState4), 3));
+        }
+      }
+    }
+    if(!end){
+      for(int j = 0;j < K;j++){
+        queue.add(temp.poll());
+      }
+      solveBeam(K);
+    }
+  }
+  
+  public static void printMoveSequences(Tile nodeptr){
+    if(nodeptr.parent == null);
+    else{
+      printMoveSequences(nodeptr.parent);
+      System.out.print(moveDirections[nodeptr.direction] + " ");
+    }
+  }
+  
+  /**
+   * helper methods below
+   **/
+    private static Comparator<Tile> cmp = new Comparator<Tile>(){
+    public int compare(Tile nodeptr1, Tile nodeptr2){
+      int f1 = nodeptr1.g + nodeptr1.h;
+      int f2 = nodeptr2.g + nodeptr2.h;
+      return f1 - f2;
+    }
+  };
+    
+  private static boolean isAvailable(int[][] state, int direction){
+    int[] position = findBlank(state);
+    if(direction == 0){
+      if(position[0] -1 < 0) return false;
+      else
+        return true;
+    }
+    else if(direction == 1){
+      if(position[0] + 1 > 2) return false;
+      else
+        return true;
+    }
+    else if(direction == 2){
+      if(position[1] - 1 < 0) return false;
+      else
+        return true;
+    }
+    else{
+      if(position[1] + 1 > 2) return false;
+      else
+        return true;
+    }
+  }
+  
+  private static int[] findBlank(int[][] state){
+    int[] result = new int[2];
+    for(int i = 0;i < 3;i++){
+      for(int j = 0;j < 3;j++){
+        if(state[i][j] == 0){
+          result[0] = i;
+          result[1] = j;
+          return result;
+        }
+      }
+    }
+    return result;
+  }
+  
+  private static boolean isFinished(int[][] state){
+    for(int i = 0;i < 3;i++){
+      for(int j = 0;j < 3;j++){
+        if(state[i][j] != goalState[i][j]) return false;
+      }
+    }
+    return true;
+  }
+  
+  private static int[][] myClone(int[][] original){
+    int[][] clone = new int[original.length][original[0].length];
+    for(int i = 0;i < original.length;i++){
+      for(int j = 0;j < original[i].length;j++){
+        clone[i][j] = original[i][j];
+      }
+    }
+    return clone;
+  }
+  /**
+   * helper class
+   **/
+  private static class Tile{
+    private Tile parent;
+    private int[][] state;
+    private int g;
+    private int h;
+    private int direction;
+    
+    public Tile(Tile parent, int[][] state, int g, int h, int direction){
+      this.parent = parent;
+      this.state = state;
+      this.g = g;
+      this.h = h;
+      this.direction = direction;
+    }
+  }
+  
+  public static void main(String[] args) throws IOException{
+    Scanner scanner = new Scanner(new FileReader(args[0]));
+    int N = scanner.nextInt();
+    int K = scanner.nextInt();
+    
+    long startTime1 = System.currentTimeMillis();
+    currentState = myClone(goalState);
+    Random r1 = new Random();
+    r1.setSeed(2);
+    randomizeState(N, r1, currentState);
+    queue= new PriorityQueue<Tile>(cmp);
+    queue.add(new Tile(null, currentState, 0, findHFirst(currentState), -1));
+    System.out.println("Solve BY solveA* V1: ");
+    solveAStarFirst();
+    System.out.println();
+    long endTime1 = System.currentTimeMillis();
+    System.out.println("Total Time for solveA* V1: " + (endTime1 - startTime1));
+    System.out.println("\n");
+    
+    long startTime2 = System.currentTimeMillis();
+    currentState = myClone(goalState);
+    Random r2 = new Random();
+    r2.setSeed(2);
+    randomizeState(N, r2, currentState);
+    queue= new PriorityQueue<Tile>(cmp);
+    queue.add(new Tile(null, currentState, 0, findHSecond(currentState), -1));
+    System.out.println("Solve BY solveA* V2: ");
+    solveAStarSecond();
+    System.out.println();
+    long endTime2 = System.currentTimeMillis();
+    System.out.println("Total Time for solveA* V2: " + (endTime2 - startTime2));
+    System.out.println("\n");
+    
+    long startTime3 = System.currentTimeMillis();
+    currentState = myClone(goalState);
+    queue= new PriorityQueue<Tile>(cmp);
+    Random r3 = new Random();
+    r3.setSeed(2);
+    for(int i = 0;i < K;i++){
+      int[][] newState = myClone(goalState);
+      randomizeState(N, r3, newState);
+      queue.add(new Tile(null, newState, 0, findHSecond(newState), -1));
+    }
+    System.out.println("Solve BY local beam search: ");
+    solveBeam(K);
+    System.out.println();
+    long endTime3 = System.currentTimeMillis();
+    System.out.println("Total Time for local beam search: " + (endTime3 - startTime3));
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//Scanner scanner = new Scanner(new FileReader(args[0]));
+//    BufferedWriter output = new BufferedWriter(new FileWriter(args[1]));
+//    int testCase = scanner.nextInt();

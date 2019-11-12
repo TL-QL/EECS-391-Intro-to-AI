@@ -1,0 +1,6 @@
+randomizeState 20
+solve A-star h1
+randomizeState 20
+solve A-star h2
+randomizeState 20
+solve beam 20

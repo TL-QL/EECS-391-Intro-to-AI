@@ -1,0 +1,3 @@
+randomizeState 1
+printState
+solve beam 7
